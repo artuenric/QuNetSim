@@ -31,7 +31,8 @@ def alice_qkd(alice, msg_buff, secret_key, receiver):
     # iterate over all bits in the secret key.
     for bit in secret_key:
         ack = False
-        for c in range(1):
+        print("Opa")
+        while ack == False:
             print("Alice sent %d key bits" % (sequence_nr + 1))
             # get a random base. 0 for Z base and 1 for X base.
             base = random.randint(0, 1)
@@ -51,11 +52,16 @@ def alice_qkd(alice, msg_buff, secret_key, receiver):
             alice.send_qubit(receiver, q_bit, await_ack=True)
 
             # Get measured basis of Bob
-            message = alice.get_next_classical(receiver, wait=4)
+            message = alice.get_classical(host_eve, msg_buff, sequence_nr)
 
             # Compare to send basis, if same, answer with 0 and set ack True and go to next bit,
             # otherwise, send 1 and repeat.
-            if message == ("%d:%d") % (sequence_nr, base):
+            print(sequence_nr)
+            print(base)
+
+            a = (f'{sequence_nr}:{base}')
+            print(message)
+            if message == (f'{sequence_nr}: {base}'):
                 ack = True
                 alice.send_classical(receiver, ("%d:0" % sequence_nr), await_ack=True)
             else:
@@ -85,10 +91,10 @@ def eve_qkd(eve, msg_buff, key_size, sender):
         bit = q_bit.measure()
 
         # Send Alice the base in which Bob has measured
-        eve.send_classical(sender, "%d:%d" % (sequence_nr, measurement_base), await_ack=True)
-
+        eve.send_classical(host_alice, (f'{sequence_nr}:{base}'), await_ack=True)
+        
         # get the return message from Alice, to know if the bases have matched
-        msg = eve.get_next_classical(sender, wait=4)
+        msg = eve.get_classical(host_alice, msg_buff, sequence_nr)
 
         # Check if the bases have matched
         if msg == ("%d:0" % sequence_nr):
@@ -124,66 +130,59 @@ def eve_receive_message(eve, msg_buff, eve_key, sender):
     print("Eve received decoded message: %s" % decrypted_msg_from_alice)
 
 
-def main():
-    # Initialize a network
-    network = Network.get_instance()
+# Initialize a network
+network = Network.get_instance()
 
-    # Define the host IDs in the network
-    nodes = ['Alice', 'Bob', 'Eve']
+# Define the host IDs in the network
+nodes = ['Alice', 'Bob', 'Eve']
 
-    network.delay = 0.0
+network.delay = 0.0
 
-    # Start the network with the defined hosts
-    network.start(nodes)
+# Start the network with the defined hosts
+network.start(nodes)
 
-    # Initialize the host Alice
-    host_alice = Host('Alice')
+# Initialize the host Alice
+host_alice = Host('Alice')
 
-    # Add a one-way connection (classical and quantum) to Bob
-    host_alice.add_connection('Bob')
+# Add a one-way connection (classical and quantum) to Bob
+host_alice.add_connection('Bob')
 
-    # Start listening
-    host_alice.start()
+# Start listening
+host_alice.start()
 
-    host_bob = Host('Bob')
-    # Bob adds his own one-way connection to Alice and Eve
-    host_bob.add_connection('Alice')
-    host_bob.add_connection('Eve')
-    host_bob.start()
+host_bob = Host('Bob')
+# Bob adds his own one-way connection to Alice and Eve
+host_bob.add_connection('Alice')
+host_bob.add_connection('Eve')
+host_bob.start()
 
-    host_eve = Host('Eve')
-    host_eve.add_connection('Bob')
-    host_eve.start()
+host_eve = Host('Eve')
+host_eve.add_connection('Bob')
+host_eve.start()
 
-    # Add the hosts to the network
-    # The network is: Alice <--> Bob <--> Eve
-    network.add_host(host_alice)
-    network.add_host(host_bob)
-    network.add_host(host_eve)
+# Add the hosts to the network
+# The network is: Alice <--> Bob <--> Eve
+network.add_host(host_alice)
+network.add_host(host_bob)
+network.add_host(host_eve)
 
-    # Generate random key
-    key_size = 10  # the size of the key in bit
-    secret_key = np.random.randint(2, size=key_size)
+# Generate random key
+key_size = 10  # the size of the key in bit
+secret_key = np.random.randint(2, size=key_size)
+print(type(secret_key))
 
-    # Concatentate functions
-    def alice_func(alice):
-        msg_buff = []
-        alice_qkd(alice, msg_buff, secret_key, host_eve.host_id)
-        alice_send_message(alice, secret_key, host_eve.host_id)
+# Concatentate functions
+def alice_func(alice):
+    msg_buff = []
+    alice_qkd(alice, msg_buff, secret_key, host_eve.host_id)
+    alice_send_message(alice, secret_key, host_eve.host_id)
 
-    def eve_func(eve):
-        msg_buff = []
-        eve_key = eve_qkd(eve, msg_buff, key_size, host_alice.host_id)
-        eve_receive_message(eve, msg_buff, eve_key, host_alice.host_id)
+def eve_func(eve):
+    msg_buff = []
+    eve_key = eve_qkd(eve, msg_buff, key_size, host_alice.host_id)
+    eve_receive_message(eve, msg_buff, eve_key, host_alice.host_id)
 
-    # Run Bob and Alice
+# Run Bob and Alice
 
-    t1 = host_alice.run_protocol(alice_func, ())
-    t2 = host_eve.run_protocol(eve_func, ())
-
-    t1.join()
-    t2.join()
-
-
-if __name__ == '__main__':
-    main()
+host_alice.run_protocol(alice_func, (), blocking=True)
+host_eve.run_protocol(eve_func, (), blocking=True)

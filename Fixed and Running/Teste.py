@@ -1,83 +1,185 @@
-from qunetsim.backends import CQCBackend
+import numpy as np
+import random
+
 from qunetsim.components import Host
 from qunetsim.components import Network
+from qunetsim.objects import Qubit
 from qunetsim.objects import Logger
 
 Logger.DISABLED = True
 
-
-def protocol_1(host, receiver):
-    # Here we write the protocol code for a host.
-    for i in range(5):
-        print('Sending EPR pair %d' % (i + 1))
-        epr_id, ack_arrived = host.send_epr(receiver, await_ack=True)
-
-        if ack_arrived:
-            # Receiver got the EPR pair and ACK came back
-            # safe to use the EPR pair.
-            q = host.get_epr(receiver, q_id=epr_id)
-            print('Host 1 measured: %d' % q.measure())
-        else:
-            print('The EPR pair was not properly established')
-    print('Sender protocol done')
+wait_time = 10
 
 
-def protocol_2(host, sender):
-    """
-    Receiver protocol for receiving 5 EPR pairs.
+# !! Warning: this Crypto algorithm is really bad!
+# !! Warning: Do not use it as a real Crypto Algorithm!
 
-    Args:
-        host (Host): The sender Host.
-        sender (str): The ID of the sender of the EPR pairs.
-    """
+# key has to be a string
+def encrypt(key, text):
+    encrypted_text = ""
+    for char in text:
+        encrypted_text += chr(ord(key) ^ ord(char))
+    return encrypted_text
 
-    # Host 2 waits 5 seconds for the EPR to arrive.
-    for _ in range(5):
-        q = host.get_epr(sender, wait=5)
-        # q is None if the wait time expired.
-        if q is not None:
-            print('Host 2 measured: %d' % q.measure())
-        else:
-            print('Host 2 did not receive an EPR pair')
-    print('Receiver protocol done')
+
+def decrypt(key, encrypted_text):
+    return encrypt(key, encrypted_text)
+
+
+def alice_qkd(alice, msg_buff, secret_key, receiver):
+    sequence_nr = 0
+    # iterate over all bits in the secret key.
+    for bit in secret_key:
+        ack = False
+        while not ack:
+            print("Alice sent %d key bits" % (sequence_nr + 1))
+            # get a random base. 0 for Z base and 1 for X base.
+            base = random.randint(0, 1)
+
+            # create qubit
+            q_bit = Qubit(alice)
+
+            # Set qubit to the bit from the secret key.
+            if bit == 1:
+                q_bit.X()
+
+            # Apply basis change to the bit if necessary.
+            if base == 1:
+                q_bit.H()
+
+            # Send Qubit to Bob
+            alice.send_qubit(receiver, q_bit, await_ack=True)
+
+            # Get measured basis of Bob
+            message = alice.get_classical(receiver, msg_buff, sequence_nr)
+
+            # Compare to send basis, if same, answer with 0 and set ack True and go to next bit,
+            # otherwise, send 1 and repeat.
+            if message == ("%d:%d") % (sequence_nr, base):
+                ack = True
+                alice.send_classical(receiver, ("%d:0" % sequence_nr), await_ack=True)
+            else:
+                ack = False
+                alice.send_classical(receiver, ("%d:1" % sequence_nr), await_ack=True)
+
+            sequence_nr += 1
+
+
+def eve_qkd(eve, msg_buff, key_size, sender):
+    sequence_nr = 0
+    received_counter = 0
+    key_array = []
+
+    while received_counter < key_size:
+        # decide for a measurement base
+        measurement_base = random.randint(0, 1)
+
+        # wait for the qubit
+        q_bit = eve.get_data_qubit(sender, wait=wait_time)
+        while q_bit is None:
+            q_bit = eve.get_data_qubit(sender, wait=wait_time)
+
+        # measure qubit in right measurement basis
+        if measurement_base == 1:
+            q_bit.H()
+        bit = q_bit.measure()
+
+        # Send Alice the base in which Bob has measured
+        eve.send_classical(sender, "%d:%d" % (sequence_nr, measurement_base), await_ack=True)
+
+        # get the return message from Alice, to know if the bases have matched
+        msg = eve.get_classical(sender, msg_buff, sequence_nr)
+
+        # Check if the bases have matched
+        if msg == ("%d:0" % sequence_nr):
+            received_counter += 1
+            print("Eve received %d key bits." % received_counter)
+            key_array.append(bit)
+        sequence_nr += 1
+
+    eve_key = key_array
+
+    return eve_key
+
+
+# helper function, used to make the key to a string
+def key_array_to_key_string(key_array):
+    key_string_binary = ''.join([str(x) for x in key_array])
+    return ''.join(chr(int(''.join(x), 2)) for x in zip(*[iter(key_string_binary)] * 8))
+
+
+def alice_send_message(alice, secret_key, receiver):
+    msg_to_eve = "Hi Eve, how are you???"
+    secret_key_string = key_array_to_key_string(secret_key)
+    encrypted_msg_to_eve = encrypt(secret_key_string, msg_to_eve)
+    print("Alice sends encrypted message")
+    alice.send_classical(receiver, "-1:" + encrypted_msg_to_eve, await_ack=True)
+
+
+def eve_receive_message(eve, msg_buff, eve_key, sender):
+    encrypted_msg_from_alice = eve.get_next_classical(sender, msg_buff, -1)
+    encrypted_msg_from_alice = encrypted_msg_from_alice.split(':')[1]
+    secret_key_string = key_array_to_key_string(eve_key)
+    decrypted_msg_from_alice = decrypt(secret_key_string, encrypted_msg_from_alice)
+    print("Eve received decoded message: %s" % decrypted_msg_from_alice)
 
 
 def main():
+    # Initialize a network
     network = Network.get_instance()
 
-    # backend = ProjectQBackend()
-    backend = CQCBackend()
+    # Define the host IDs in the network
+    nodes = ['Alice', 'Bob', 'Eve']
 
-    nodes = ['A', 'B', 'C']
-    network.start(nodes, backend)
-    network.delay = 0.1
+    network.delay = 0.0
 
-    host_A = Host('A', backend)
-    host_A.add_connection('B')
-    host_A.delay = 0
-    host_A.start()
+    # Start the network with the defined hosts
+    network.start(nodes)
 
-    host_B = Host('B', backend)
-    host_B.add_connections(['A', 'C'])
-    host_B.delay = 0
-    host_B.start()
+    # Initialize the host Alice
+    host_alice = Host('Alice')
 
-    host_C = Host('C', backend)
-    host_C.add_connection('B')
-    host_C.delay = 0
-    host_C.start()
+    # Add a one-way connection (classical and quantum) to Bob
+    host_alice.add_connection('Bob')
 
-    network.add_host(host_A)
-    network.add_host(host_B)
-    network.add_host(host_C)
+    # Start listening
+    host_alice.start()
 
-    t1 = host_A.run_protocol(protocol_1, (host_C.host_id,))
-    t2 = host_C.run_protocol(protocol_2, (host_A.host_id,))
+    host_bob = Host('Bob')
+    # Bob adds his own one-way connection to Alice and Eve
+    host_bob.add_connection('Alice')
+    host_bob.add_connection('Eve')
+    host_bob.start()
 
-    t1.join()
-    t2.join()
-    network.stop(True)
+    host_eve = Host('Eve')
+    host_eve.add_connection('Bob')
+    host_eve.start()
 
+    # Add the hosts to the network
+    # The network is: Alice <--> Bob <--> Eve
+    network.add_host(host_alice)
+    network.add_host(host_bob)
+    network.add_host(host_eve)
+
+    # Generate random key
+    key_size = 10  # the size of the key in bit
+    secret_key = np.random.randint(2, size=key_size)
+
+    # Concatentate functions
+    def alice_func(alice):
+        msg_buff = []
+        alice_qkd(alice, msg_buff, secret_key, host_eve.host_id)
+        alice_send_message(alice, secret_key, host_eve.host_id)
+
+    def eve_func(eve):
+        msg_buff = []
+        eve_key = eve_qkd(eve, msg_buff, key_size, host_alice.host_id)
+        eve_receive_message(eve, msg_buff, eve_key, host_alice.host_id)
+
+    # Run Bob and Alice
+
+    host_alice.run_protocol(alice_func, (), blocking=True)
+    host_eve.run_protocol(eve_func, (), blocking=True)
 
 if __name__ == '__main__':
     main()

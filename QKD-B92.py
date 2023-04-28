@@ -13,8 +13,8 @@ def eve_sniffing_quantum(sender, receiver, qubit):
     # Eve will manipulate only part of the qubits she intercepts
     # She chooses the base in which she measures at random.
     if sender == 'Alice':
-        r = random()
-        if r > 0.5:
+        r = randint(0, 10)
+        if r > 9:
             base = randint(0, 1)
             if base == 1:
                 qubit.H()
