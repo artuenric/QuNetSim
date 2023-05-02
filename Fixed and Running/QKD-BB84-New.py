@@ -37,7 +37,7 @@ print(f"Chave gerada: {key}")
 # Criação de um protocolo sender_QKD e outra receiver_QKD.
 def sender_QKD(sender, receiver, key, msg):
     """
-    Protocolo QKD para o remetente.
+    Protocolo QKD BB84 para o remetente.
 
     Args:
         sender (Host): Objeto host que deseja enviar a chave.
@@ -112,10 +112,10 @@ def receiver_QKD(receiver, sender, key_size):
 
     while received_counter < key_size:
         # Receber o qubit enviado pelo remetente.
-        qubit = receiver.get_data_qubit(sender.host_id, wait=5)
+        qubit = receiver.get_qubit(sender.host_id, wait=5)
         while qubit == None:
             print("Receptor - O Qubit recebido vale None.")
-            qubit = receiver.get_data_qubit(sender.host_id, wait=10)
+            qubit = receiver.get_qubit(sender.host_id, wait=10)
         print("Receptor - Qubit recebido!")
         # Mesma lógica simples para escolha de base.
         base = randint(0, 1)
@@ -166,24 +166,24 @@ def main():
     network.delay = 0.5
 
     host_Alice = Host('Alice')
-    host_Alice.add_connection('Bob')
+    host_Alice.add_connection('Eve')
     host_Alice.delay = 0.5
     host_Alice.start()
 
-    host_Bob = Host('Bob')
-    host_Bob.add_connection('Alice')
-    host_Bob.add_connection('Eve')
-    host_Bob.delay = 0.5
-    host_Bob.start()
-
     host_Eve = Host('Eve')
+    host_Eve.add_connection('Alice')
     host_Eve.add_connection('Bob')
     host_Eve.delay = 0.5
     host_Eve.start()
 
+    host_Bob = Host('Bob')
+    host_Bob.add_connection('Eve')
+    host_Bob.delay = 0.5
+    host_Bob.start()
+
     network.add_host(host_Alice)
-    network.add_host(host_Bob)
     network.add_host(host_Eve)
+    network.add_host(host_Bob)
 
     # Executando os protocolos:
     host_Alice.run_protocol(sender_QKD, (host_Bob, key, msg))

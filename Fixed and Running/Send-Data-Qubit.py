@@ -52,7 +52,10 @@ def main():
             continue
 
         # Diego obtém o qubit enviado pelo Arthur
-        qubit_recived = host_Diego.get_data_qubit('Arthur', qubit_ID)
+        qubit_recived = host_Diego.get_qubit('Arthur', qubit_ID)
+        data = host_Diego.get_data_qubit('Arthur', qubit_ID)
+        print(qubit_recived)
+        print(data)
 
         # Confirma o recebimento do qubit, mede-o e mostra o resultado
         if qubit_recived is not None:

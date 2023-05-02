@@ -3,43 +3,43 @@
 from qunetsim.components import Host, Network
 from qunetsim.objects import Qubit
 from qunetsim.objects import Logger
-from random import randint, random
+from random import randint
 
-Logger.DISABLED = True
+#Logger.DISABLED = False
 wait_time = 20
 
-
 def eve_sniffing_quantum(sender, receiver, qubit):
-    # Eve will manipulate only part of the qubits she intercepts
-    # She chooses the base in which she measures at random.
+    # Eve manipulará apenas parte dos qubits que interceptar
+    # Ele escolhe a base em que mede aleatoriamente.
     if sender == 'Alice':
-        r = randint(0, 10)
-        if r > 9:
+        r = randint(0, 1)
+        if r > 0:
             base = randint(0, 1)
             if base == 1:
                 qubit.H()
+            # O qubit não deve ser destruído após a medição.
             qubit.measure(non_destructive=True)
 
 
 def build_network_b92(eve_interception):
 
     network = Network.get_instance()
-
     nodes = ['Alice', 'Bob', 'Eve']
     network.start(nodes)
 
     host_alice = Host('Alice')
+    host_alice.delay = 0
     host_bob = Host('Bob')
+    host_bob.delay = 0
     host_eve = Host('Eve')
 
+    # Aicionando as conexões
     host_alice.add_connection('Eve')
     host_eve.add_connections(['Alice', 'Bob'])
     host_bob.add_connection('Eve')
-    # adding the connections - Alice wants to transfer an encrypted message to Bob
-    # The network looks like this: Alice---Eve---Bob
-
-    host_alice.delay = 0
-    host_bob.delay = 0
+    
+    # Alice quer transferir uma mensagem criptografada para Bob
+    # A rede fica assim: Alice---Eve---Bob
 
     # starting
     host_alice.start()
@@ -57,15 +57,15 @@ def build_network_b92(eve_interception):
     return network, hosts
 
 
-def generate_key(key_length):
-    generated_key = []
-    for i in range(key_length):
-        generated_key.append(randint(0, 1))
-    print(f'Generated the key {generated_key}')
-    return generated_key
+def generate_key(key_size):
+    key = []
+    for bit in range(key_size):
+        key.append(randint(0, 1))
+    print(f"Chave gerada: {key}")
+    return key
 
-
-def sender_qkd(alice, secret_key, receiver):
+def sender_QKD(alice, secret_key, receiver):
+    #
     sent_qubit_counter = 0
     for bit in secret_key:
         success = False
@@ -92,7 +92,7 @@ def receiver_qkd(bob, key_size, sender):
     while received_counter < key_size:
         base = randint(0, 1)
         # 0 means rectilinear basis and 1 means diagonal basis
-        qubit = bob.get_data_qubit(sender, wait=wait_time)
+        qubit = bob.get_qubit(sender, wait=wait_time)
         if qubit is not None:
             if base == 1:
                 qubit.H()
@@ -139,7 +139,7 @@ def check_key_receiver(bob, key_check_bob, sender):
 
 def alice_func(host, bob_id, length_of_check, key_length):
     encryption_key_binary = generate_key(key_length)
-    sender_qkd(host, encryption_key_binary, bob_id)
+    sender_QKD(host, encryption_key_binary, bob_id)
     print('Sent all the qubits sucessfully!')
     key_to_test = encryption_key_binary[0:length_of_check]
     check_key_sender(host, key_to_test, bob_id)
