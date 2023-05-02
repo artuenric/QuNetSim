@@ -11,6 +11,42 @@ Logger.DISABLED = True
 wait_time = 10
 
 
+# Initialize a network
+network = Network.get_instance()
+
+# Define the host IDs in the network
+nodes = ['Alice', 'Bob', 'Eve']
+
+network.delay = 0.0
+
+# Start the network with the defined hosts
+network.start(nodes)
+
+# Initialize the host Alice
+host_alice = Host('Alice')
+
+# Add a one-way connection (classical and quantum) to Bob
+host_alice.add_connection('Bob')
+
+# Start listening
+host_alice.start()
+
+host_bob = Host('Bob')
+# Bob adds his own one-way connection to Alice and Eve
+host_bob.add_connection('Alice')
+host_bob.add_connection('Eve')
+host_bob.start()
+
+host_eve = Host('Eve')
+host_eve.add_connection('Bob')
+host_eve.start()
+
+# Add the hosts to the network
+# The network is: Alice <--> Bob <--> Eve
+network.add_host(host_alice)
+network.add_host(host_bob)
+network.add_host(host_eve)
+
 # !! Warning: this Crypto algorithm is really bad!
 # !! Warning: Do not use it as a real Crypto Algorithm!
 
@@ -52,7 +88,7 @@ def alice_qkd(alice, msg_buff, secret_key, receiver):
             alice.send_qubit(receiver, q_bit, await_ack=True)
 
             # Get measured basis of Bob
-            message = alice.get_classical(host_eve, msg_buff, sequence_nr)
+            message = alice.get_classical(host_bob.host_id, msg_buff, sequence_nr)
 
             # Compare to send basis, if same, answer with 0 and set ack True and go to next bit,
             # otherwise, send 1 and repeat.
@@ -91,10 +127,10 @@ def eve_qkd(eve, msg_buff, key_size, sender):
         bit = q_bit.measure()
 
         # Send Alice the base in which Bob has measured
-        eve.send_classical(host_alice, (f'{sequence_nr}:{base}'), await_ack=True)
+        eve.send_classical(host_alice.host_id, (f'{sequence_nr}:{base}'), await_ack=True)
         
         # get the return message from Alice, to know if the bases have matched
-        msg = eve.get_classical(host_alice, msg_buff, sequence_nr)
+        msg = eve.get_classical(host_alice.host_id, sequence_nr)
 
         # Check if the bases have matched
         if msg == ("%d:0" % sequence_nr):
@@ -129,42 +165,6 @@ def eve_receive_message(eve, msg_buff, eve_key, sender):
     decrypted_msg_from_alice = decrypt(secret_key_string, encrypted_msg_from_alice)
     print("Eve received decoded message: %s" % decrypted_msg_from_alice)
 
-
-# Initialize a network
-network = Network.get_instance()
-
-# Define the host IDs in the network
-nodes = ['Alice', 'Bob', 'Eve']
-
-network.delay = 0.0
-
-# Start the network with the defined hosts
-network.start(nodes)
-
-# Initialize the host Alice
-host_alice = Host('Alice')
-
-# Add a one-way connection (classical and quantum) to Bob
-host_alice.add_connection('Bob')
-
-# Start listening
-host_alice.start()
-
-host_bob = Host('Bob')
-# Bob adds his own one-way connection to Alice and Eve
-host_bob.add_connection('Alice')
-host_bob.add_connection('Eve')
-host_bob.start()
-
-host_eve = Host('Eve')
-host_eve.add_connection('Bob')
-host_eve.start()
-
-# Add the hosts to the network
-# The network is: Alice <--> Bob <--> Eve
-network.add_host(host_alice)
-network.add_host(host_bob)
-network.add_host(host_eve)
 
 # Generate random key
 key_size = 10  # the size of the key in bit
