@@ -11,7 +11,7 @@ from qunetsim.components import Host, Network
 from qunetsim.objects import Qubit, Logger
 from random import randint
 
-# "Criptografia"
+# Criptografia
 # Nota: O algoritmo aqui utilizado para criptografia é extremamente simples, pode, e deve, ser trocado.
 def encrypt(key, text):
     encrypted_text = ""
@@ -33,9 +33,20 @@ for bit in range(key_size):
     key.append(randint(0, 1))
 print(f"Chave gerada: {key}")
 
+# Protocolos:
 # Criação de um protocolo sender_QKD e outra receiver_QKD.
 def sender_QKD(sender, receiver, key, msg):
-    # É preciso guardar e especificar a informação de qual qubit utilizaremos.
+    """
+    Protocolo QKD para o remetente.
+
+    Args:
+        sender (Host): Objeto host que deseja enviar a chave.
+        receiver (Host): Objeto host que deseja receber a chave e mensagem.
+        key (list): Lista de 0s e 1s que representa a chave quântica.
+        msg (str): Mensagem que será enviada.
+    """
+    
+    # Guarda e especifica qual qubit trabalharemos.
     seq_num = 0
     for bit in key:
         ack = False
@@ -82,6 +93,16 @@ def sender_QKD(sender, receiver, key, msg):
     
 
 def receiver_QKD(receiver, sender, key_size):
+    """
+    Protocolo QKD BB84 para o receptor.
+
+    Args:
+        receiver (Host): Objeto host que deseja receber a chave e mensagem.
+        sender (Host): Objeto host que deseja enviar a chave.
+        key_size (int): Tamanho da chave. Utilizado para controle do laço.
+
+    """
+    
     # A key "gerada" pelo reptor.
     key_receiver = []
     # Controle do laço.
