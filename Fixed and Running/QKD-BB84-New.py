@@ -2,7 +2,7 @@
 Alice deseja mandar uma mensagem para Bob sem que Eve possa se intrometrometer.
 A rede tem essa aparência: Alice <---> Eve <--> Bob. 
 O objetivo é compartilhar uma chave por meio de um canal quântico. A chave é utilizada para criptografar e descriptografar a mensagem. 
-Como Eve não tem acesso à chave, ele não pode decifrar a mensagem que, inclusive, é compartilhada de forma clássica.
+Como Eve não tem acesso à chave, ele não pode decifrar a mensagem, que é compartilhada de forma clássica.
 
 """
 
