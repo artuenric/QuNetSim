@@ -3,7 +3,7 @@ from qunetsim.components import Host, Network
 from qunetsim.objects import Qubit, Logger
 from random import randint
 
-Logger.DISABLED = False
+Logger.DISABLED = True
 
 def sniffing_QKD(sender, receiver, qubit):
     """
@@ -43,9 +43,9 @@ def sender_QKD(sender, receiver, key):
             
             if message is not None:
                 if message.content == 'Sucesso!':
-                    print(f'{sender.host_id} enviou o {sent_qubit_counter+1}º para {receiver.host_id}.')
                     success = True
                     sent_qubit_counter += 1
+                    print(f'{sender.host_id} enviou o {sent_qubit_counter+1}º para {receiver.host_id}.')
 
 def receiver_qkd(receiver, sender, key_size):
     """
@@ -56,15 +56,14 @@ def receiver_qkd(receiver, sender, key_size):
     key_receiver = []
     # Contador de bits medidos corretamente pelo receptor. Controle do laço.
     received_counter = 0
-
+    print('1')
     while received_counter < key_size:
-
+        print(received_counter)
         base = randint(0, 1)
         # 0 significa base retilínea e 1 significa base diagonal
-        qubit = receiver.get_qubit(sender.host_id, wait=20)
+        qubit = receiver.get_data_qubit(sender.host_id, wait=20)
         
         if qubit is not None:
-            print(f'Bob recebeu o {received_counter+1}º qubit.')
             if base == 1:
                 qubit.H()
 
@@ -74,6 +73,7 @@ def receiver_qkd(receiver, sender, key_size):
                     resulting_key_bit = 0
                 elif base == 0:
                     resulting_key_bit = 1
+                print(f'Bob recebeu o {received_counter+1}º bit.')
                 message_to_send = 'Sucesso!'
                 key_receiver.append(resulting_key_bit)
                 received_counter += 1
@@ -88,22 +88,22 @@ def main():
     network = Network.get_instance()
     nodes = ['Alice', 'Eve', 'Bob']
     network.start(nodes)
-    network.delay = 10
+    network.delay = 0.1
 
     host_Alice = Host('Alice')
-    host_Alice.add_connection('Eve')
-    host_Alice.delay = 10
+    host_Alice.add_connection('Bob')
+    host_Alice.delay = 0.1
     host_Alice.start()
 
     host_Eve = Host('Eve')
     host_Eve.add_connection('Alice')
     host_Eve.add_connection('Bob')
-    host_Eve.delay = 10
+    host_Eve.delay = 0.1
     host_Eve.start()
 
     host_Bob = Host('Bob')
-    host_Bob.add_connection('Eve')
-    host_Bob.delay = 10
+    host_Bob.add_connection('Alice')
+    host_Bob.delay = 0.1
     host_Bob.start()
 
     network.add_host(host_Alice)
@@ -121,8 +121,14 @@ def main():
     key_size = len(key)
     print(key_size)
 
-    host_Alice.run_protocol(sender_QKD,(host_Bob, key))
-    host_Bob.run_protocol(receiver_qkd, (host_Alice, key_size))
+    def protocolo_sender(sender):
+        sender_QKD(sender, host_Bob, key)
+
+    def protocolo_receiver(receiver):
+        receiver_qkd(receiver, host_Alice, key_size)
+
+    host_Alice.run_protocol(protocolo_sender,())
+    host_Bob.run_protocol(protocolo_receiver, (), blocking=True)
 
     # Para a rede no final do exemplo
     network.stop(True)
