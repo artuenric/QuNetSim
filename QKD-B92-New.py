@@ -10,12 +10,11 @@ def sniffing_QKD(sender, receiver, qubit):
     Função utilizada pelo interceptador. Deve ser atribuída à "q_sniffing_fn" do host que irá interceptar.
     """
     if sender == 'Alice':
-        r = randint(0, 10)
-        if r > 9:
+        r = randint(0, 1)
+        if r > 1:
             base = randint(0, 1)
             if base == 1:
                 qubit.H()
-
             # O qubit não deve ser destruído após a medição.
             qubit.measure(non_destructive=True)
 
@@ -102,7 +101,7 @@ def main():
     host_Eve.start()
 
     host_Bob = Host('Bob')
-    host_Bob.add_connection('Alice')
+    host_Bob.add_connection('Eve')
     host_Bob.delay = 0.1
     host_Bob.start()
 
@@ -110,13 +109,13 @@ def main():
     network.add_host(host_Eve)
     network.add_host(host_Bob)
 
-    """    interception = False
+    interception = True
     if interception == True:
             # Se há ou não sniff
             host_Eve.q_relay_sniffing = True
             # A função a ser aplicada aos qubits em trânsito.
             host_Eve.q_relay_sniffing_fn = sniffing_QKD
-    """
+    
     key = [0, 1, 0, 1, 1, 0, 1]
     key_size = len(key)
     print(key_size)
