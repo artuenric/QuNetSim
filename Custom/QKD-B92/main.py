@@ -12,7 +12,6 @@ from send_message import get_local_path, move_file
 
 # Obtendo o local/caminho onde o programa está sendo executado
 path = get_local_path()
-print(f"Local: {path}\n")
 
 from time import sleep
 
@@ -73,6 +72,7 @@ def main():
     sender_QKD(sender, host_Bob, key_binary)
 
     sleep(2)
+
     # Criptografando a mensagem
     name = input("Digite o nome do arquivo que deseja enviar: ")
     message = f'{path}/alice/{name}'
@@ -80,7 +80,8 @@ def main():
     sender.send_classical(host_Bob.host_id, name)
 
     # "Enviando" a mensagem criptografada para Bob
-    sender.send_classical(host_Bob.host_id, "Enviando a mensagem encriptada.")
+    print("Enviando mensagem secreta")
+    sleep(10)
     source_file = f'{message}.encrypted'
     destination = f'{path}/bob'
     move_file(source_file, destination)
@@ -104,7 +105,7 @@ def main():
     source_file = f'{path}/bob/{message}'
     
     # Espera um pouquinho...
-    sleep(3)
+    sleep(15)
     decrypt_file(source_file, binary_key)
 
 

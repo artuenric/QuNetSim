@@ -3,7 +3,6 @@ from qunetsim.components import Host, Network
 from qunetsim.objects import Qubit, Logger
 from random import randint
 
-
 # Protocolos de envio e recebimento QKD:
 def sender_QKD(sender, receiver, key):
   """
