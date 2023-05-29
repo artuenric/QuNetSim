@@ -1,5 +1,8 @@
 # Importando as dependências do QuNetSim:
 from qunetsim.components import Host, Network
+from qunetsim.objects import Logger
+
+Logger.DISABLE = False
 
 # Funções do QKD
 from B92 import sender_QKD, receiver_QKD, sniffing_QKD
@@ -20,29 +23,43 @@ def main():
 
   # Inicializando a rede e estabelecendo as conexões.
   network = Network.get_instance()
-  nodes = ['Alice', 'Eve', 'Bob']
-  network.start(nodes)
+  nodes = ['Alice', 'Node2', 'Node3', 'Node4', 'Eve', 'Node6', 'Node7', 'Node8', 'Node9', 'Node10', 'Node11', 'Bob']
+
   network.delay = 0
+  network.start(nodes)
 
   host_Alice = Host('Alice')
-  host_Alice.add_connection('Eve')
-  host_Alice.delay = 0.05
-  host_Alice.start()
-  
+  host_n2 = Host('Node2')
+  host_n3 = Host('Node3')
+  host_n4 = Host('Node4')
   host_Eve = Host('Eve')
-  host_Eve.add_connection('Alice')
-  host_Eve.add_connection('Bob')
-  host_Eve.delay = 0.05
-  host_Eve.start()
-
+  host_n6 = Host('Node6')
+  host_n7 = Host('Node7')
+  host_n8 = Host('Node8')
+  host_n9 = Host('Node9')
+  host_n10 = Host('Node10')
+  host_n11 = Host('Node11')
   host_Bob = Host('Bob')
-  host_Bob.add_connection('Eve')
-  host_Bob.delay = 0.05
-  host_Bob.start()
 
-  network.add_host(host_Alice)
-  network.add_host(host_Eve)
-  network.add_host(host_Bob)
+  hosts = [host_Alice, host_n2, host_n3, host_n4, host_Eve, host_n6, host_n7, host_n8, host_n9, host_n9, host_n10, host_n11, host_Bob]
+        
+  host_Alice.add_connection('Node2')
+  host_n2.add_connections(['Alice', 'Node3'])
+  host_n3.add_connections(['Node2', 'Node4'])
+  host_n4.add_connections(['Node3', 'Eve'])
+  host_Eve.add_connections(['Node4', 'Node6'])
+  host_n6.add_connections(['Eve', 'Node7'])
+  host_n7.add_connections(['Node6', 'Node8'])
+  host_n8.add_connections(['Node7', 'Node9'])
+  host_n9.add_connections(['Node8', 'Node10'])
+  host_n10.add_connections(['Node9', 'Node11'])
+  host_n11.add_connections(['Node10', 'Bob'])
+  host_Bob.add_connection('Bob')
+
+  for node in hosts:
+    node.start()
+
+  network.add_hosts(hosts)
 
   interception = input(
     "Deseja que a rede possa ser espionada? 'S' para sim, 'N' para não: ")
@@ -119,3 +136,8 @@ def main():
 
 if __name__ == '__main__':
   main()
+    
+
+
+
+    

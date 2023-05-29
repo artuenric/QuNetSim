@@ -7,6 +7,9 @@ def create_nodes(n):
     nodes_list = []
     for node in range(n):
         nodes_list.append(f'Node{node+1}')
-    print(nodes_list)
+    return nodes_list
 
-create_nodes(9)
+print(create_nodes(12))
+
+    
+    
