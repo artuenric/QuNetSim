@@ -28,7 +28,7 @@ def main():
   host_Alice.add_connection('Eve')
   host_Alice.delay = 0.05
   host_Alice.start()
-
+  
   host_Eve = Host('Eve')
   host_Eve.add_connection('Alice')
   host_Eve.add_connection('Bob')
