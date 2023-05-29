@@ -105,3 +105,36 @@ def sniffing_QKD(sender, receiver, qubit):
       qubit.H()
     # O qubit não deve ser destruído após a medição.
     qubit.measure(non_destructive=True)
+
+def sender_protocol(sender, receiver):
+  key = [0,1,0,1,1,0]
+  key_size = len(key)
+  sender.send_classical(receiver.host_id, str(key_size))
+  sender_QKD(sender, receiver, key)
+  
+def receiver_protocol(receiver, sender):
+  key_size = int(receiver.get_next_classical(sender.host_id).content)
+  key = receiver_QKD(receiver, sender, key_size)
+  if len(key) == key_size:
+    print(key)
+      
+def running_concurrently(executions, hosts):
+  senders =[]
+  receivers = []
+  
+  # Escolhendo os remetentes e receptores do protocolo
+  for choice in range(executions):
+    sender = hosts[randint(0, len(hosts)-1)]
+    receiver = hosts[randint(0, len(hosts)-1)]
+
+    while sender.host_id == receiver.host_id:
+      receiver = hosts[randint(0, len(hosts)-1)]
+    
+    # Adicionando os nós escolhidos nas suas respectvas listas
+    senders.append(sender)
+    receivers.append(receiver)
+
+  # Rodando os protocolos com os remetentes e receptores escolhidos
+  for send, recv in zip(senders, receivers):
+    send.run_protocol(sender_protocol, (recv,))
+    recv.run_protocol(receiver_protocol, (send,))
