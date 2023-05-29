@@ -2,17 +2,18 @@
 from qunetsim.components import Host, Network
 
 # Funções do QKD
-from B92 import sender_QKD, receiver_QKD, sniffing_QKD
+from b92 import sender_QKD, receiver_QKD, sniffing_QKD
 
 # Funções da Criptografia e da Chave
-from Cryptography_Algorithm import generate_key, encrypt_file, decrypt_file, key_to_binary, binary_to_key
+from cryptography_algorithm import generate_key, encrypt_file, decrypt_file, key_to_binary, binary_to_key
 
 # Funções para o envio da mensagem
-from Send_Message import get_local_path, move_file
+from send_message import get_local_path, move_file
 
 # Obtendo o local/caminho onde o programa está sendo executado
 path = get_local_path()
 
+# Para uma melhor observação da execução do código
 from time import sleep
 
 # Função Main
