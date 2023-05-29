@@ -1,6 +1,6 @@
 # Importando as dependências do QuNetSim:
 from qunetsim.components import Host, Network
-from qunetsim.objects import Logger
+from qunetsim.objects import Logger, Qubit
 
 Logger.DISABLE = False
 
@@ -27,21 +27,21 @@ def main():
   host_n9 = Host('Node9')
   host_n10 = Host('Node10')
   host_n11 = Host('Node11')
-  host_Bob = Host('Node12')
+  host_n12 = Host('Node12')
 
-  hosts = [host_n1, host_n2, host_n3, host_n4, host_n5, host_n6, host_n7, host_n8, host_n9, host_n9, host_n10, host_n11, host_Bob]
+  hosts = [host_n1, host_n2, host_n3, host_n4, host_n5, host_n6, host_n7, host_n8, host_n9, host_n9, host_n10, host_n11, host_n12]
         
-  """for i, node in enumerate(hosts):
-    if i != 0 and i != len(hosts)-1:
-      node.add_connection(hosts[i-1])
-      node.add_connection(hosts[i+1])
-    elif i == 0:
-      node.add_connection(hosts[1])
+  for i, node in enumerate(hosts):
+    if i == 0:
+      node.add_connection(hosts[1].host_id)
+    elif 0 > i > len(hosts)-1:
+      node.add_connection(hosts[i-1].host_id)
+      node.add_connection(hosts[i+1].host_id)
     else:
-      node.add_connection(hosts[i-1])"""
+      node.add_connection(hosts[i-1].host_id)
       
       
-  """host_n1.add_connection('Node2')
+  host_n1.add_connection('Node2')
   host_n2.add_connections(['Node1', 'Node3'])
   host_n3.add_connections(['Node2', 'Node4'])
   host_n4.add_connections(['Node3', 'Node5'])
@@ -52,13 +52,19 @@ def main():
   host_n9.add_connections(['Node8', 'Node10'])
   host_n10.add_connections(['Node9', 'Node11'])
   host_n11.add_connections(['Node10', 'Node12'])
-  host_Bob.add_connection('Node11')"""
+  host_n12.add_connection('Node11')
 
   for node in hosts:
     node.start()
+    print(node.get_connections())
 
   network.add_hosts(hosts)
-  print("oi")
+  
+  q = Qubit(host_n1)
+  host_n1.send_qubit(host_n12.host_id, q)
+  host_n12.get_qubit(host_n1.host_id, wait=5)
+  network.draw_classical_network()
+  
 """  interception = input(
     "Deseja que a rede possa ser espionada? 'S' para sim, 'N' para não: ")
   while not interception.upper() in ['S', 'N']:
