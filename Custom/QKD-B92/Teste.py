@@ -54,7 +54,7 @@ def main():
   host_n9.add_connections(['Node8', 'Node10'])
   host_n10.add_connections(['Node9', 'Node11'])
   host_n11.add_connections(['Node10', 'Bob'])
-  host_Bob.add_connection('Bob')
+  host_Bob.add_connection('Node11')
 
   for node in hosts:
     node.start()
