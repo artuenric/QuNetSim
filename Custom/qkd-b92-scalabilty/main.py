@@ -2,8 +2,6 @@
 from qunetsim.components import Host, Network
 from qunetsim.objects import Logger, Qubit
 
-Logger.DISABLE = False
-
 # Funções do QKD
 from b92 import sender_QKD, receiver_QKD, sniffing_QKD, running_concurrently
 
@@ -17,17 +15,29 @@ def main():
   network.start(nodes)
 
   host_n1 = Host('Node1')
+  #host_n1.delay = 1
   host_n2 = Host('Node2')
+  #host_n2.delay = 5
   host_n3 = Host('Node3')
+  #host_n3.delay = 0.2
   host_n4 = Host('Node4')
+  #host_n4.delay = 1.2
   host_n5 = Host('Node5')
+  #host_n5.delay = 0.8
   host_n6 = Host('Node6')
+  #host_n6.delay = 4
   host_n7 = Host('Node7')
+  #host_n7.delay = 0.7
   host_n8 = Host('Node8')
+  #host_n8.delay = 0.5
   host_n9 = Host('Node9')
+  #host_n9.delay = 0
   host_n10 = Host('Node10')
+  #host_n10.delay = 0.2
   host_n11 = Host('Node11')
+  #host_n11.delay = 0.3
   host_n12 = Host('Node12')
+  #host_n12.delay = 1.5
 
   hosts = [host_n1, host_n2, host_n3, host_n4, host_n5, host_n6, host_n7, host_n8, host_n9, host_n10, host_n11, host_n12]
   
@@ -66,20 +76,8 @@ def main():
     execs = input("Quantas execuções simultâneas a rede deve ter? ")
   execs = int(execs)
   
-  #running_concurrently(execs, hosts)
+  running_concurrently(execs, hosts)
   
-  def sender_protocol(sender, receiver):
-    key = [0,1,0,1,1,0]
-    key_size = len(key)
-    sender.send_classical(receiver.host_id, str(key_size))
-    sender_QKD(sender, receiver, key)
-  
-  def receiver_protocol(receiver, sender):
-    key_size = int(receiver.get_next_classical(sender.host_id).content)
-    key = receiver_QKD(receiver, sender, key_size)
-    if len(key) == key_size:
-      print(key)
-
   # Para a rede no final do exemplo
   network.stop(True)
   exit()

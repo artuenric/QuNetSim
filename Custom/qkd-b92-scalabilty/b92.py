@@ -137,4 +137,4 @@ def running_concurrently(executions, hosts):
   # Rodando os protocolos com os remetentes e receptores escolhidos
   for send, recv in zip(senders, receivers):
     send.run_protocol(sender_protocol, (recv,))
-    recv.run_protocol(receiver_protocol, (send,))
+    recv.run_protocol(receiver_protocol, (send,), blocking=True)
