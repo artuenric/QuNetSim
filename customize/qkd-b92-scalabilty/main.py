@@ -4,10 +4,9 @@ from qunetsim.objects import Logger, Qubit
 
 # Funções do QKD
 from b92 import sniffing_QKD, choice, running_concurrently
-# Funções para escrita do log
-from log import write_log
-
+from time import sleep
 def main():
+  Logger.DISABLED = False
   # Inicializando a rede e estabelecendo as conexões.
   network = Network.get_instance()
   network.delay = 0
@@ -58,7 +57,7 @@ def main():
 
   # Definindo o número de execuções do protocolo
   #execs = input("Quantas execuções simultâneas a rede deve ter? ")
-  execs = '40'
+  execs = '50'
 
   # Escolhendo aleatoriamente quem participa das comunicações
   senders, receivers, sniffers = choice(hosts, execs)
@@ -74,20 +73,13 @@ def main():
     
   # Finalmente, executando os protocolos simultaneamente.
   running_concurrently(senders, receivers)
-
-    # importing module
-  import logging
   
-  # Creating an object
-  logger = logging.getLogger()
-  
-  write_log(logger)
+  sleep(360)
   # Para a rede no final do exemplo
   network.stop(True)
   exit()
 
 if __name__ == '__main__':
-  
   import sys
   import os
 
