@@ -72,7 +72,6 @@ def receiver_QKD(receiver, sender, key_size):
           resulting_key_bit = 0
         elif base == 0:
           resulting_key_bit = 1
-        print(f'{sender.host_id} - {receiver.host_id}: {received_counter+1}º bit recebido.')
         message_to_send = 'sucess'
         key_receiver.append(resulting_key_bit)
         received_counter += 1
@@ -204,8 +203,7 @@ def receiver_protocol(receiver, sender):
   key = receiver_QKD(receiver, sender, key_size)
   
   if len(key) == key_size:
-    print(f'''{sender.host_id} - {receiver.host_id}: Último bit recebido.
-Chave recebida: {key}''')
+    print(f'''{sender.host_id} - {receiver.host_id}: Chave recebida: {key}''')
 
 
 # Função para execução de várias comunicações simultâneas dos protocolos
@@ -225,4 +223,4 @@ def running_concurrently(senders, receivers):
     recv.run_protocol(receiver_protocol, (send,))
 
   # Define o tempo que será dado ao simulador para execução dos protocolos
-  sleep(600)
+  

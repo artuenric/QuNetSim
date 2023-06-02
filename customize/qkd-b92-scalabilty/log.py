@@ -12,7 +12,7 @@ def get_local_path():
     return current_dir
 
 
-def write_log(txt):
+def read_log(txt):
     path = get_local_path()
-    with open(f'{path}/log.txt', 'w', encoding='utf-8') as snff:
-        snff.write(f'{txt}\n')
+    #with open(f'{path}/log.txt', 'w', encoding='utf-8') as snff:
+        
