@@ -29,6 +29,7 @@ def sender_QKD(sender, receiver, key):
       if bit == 1:
         qubit.H()
 
+      print(qubit.id)
       # Enviando o qubit para o receptor.
       sender.send_qubit(receiver.host_id, qubit, await_ack=True)
 
