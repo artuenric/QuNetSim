@@ -3,9 +3,10 @@ from qunetsim.components import Host, Network
 from qunetsim.objects import Qubit, Logger
 from random import randint
 from time import sleep
+import re
 
 # Funções de envio e recebimento da chave pelo QKD:
-def sender_QKD(sender, receiver, key):
+def sender_QKD(sender, receiver, execution, key):
   """
     Função de envio da chave QKD B92.
 
@@ -29,12 +30,14 @@ def sender_QKD(sender, receiver, key):
       if bit == 1:
         qubit.H()
 
-      print(qubit.id)
+      # Enviados os dados do qubit
+      sender.send_classical(receiver.host_id, f'{qubit.id}[{execution}]')
+      
       # Enviando o qubit para o receptor.
       sender.send_qubit(receiver.host_id, qubit, await_ack=True)
 
       # Aguardando a mensagem sobre a escolha da base.
-      message = sender.get_next_classical(receiver.host_id, wait=20)
+      message = sender.get_next_classical(receiver.host_id, wait=5)
 
       if message is not None:
         if message.content == 'sucess':
@@ -44,7 +47,7 @@ def sender_QKD(sender, receiver, key):
         loss_message += 1
 
 
-def receiver_QKD(receiver, sender, key_size):
+def receiver_QKD(receiver, sender, execution, key_size):
   """
     Função de recebimento da chave QKD B92.
 
@@ -58,11 +61,27 @@ def receiver_QKD(receiver, sender, key_size):
   key_receiver = []
   # Contador de bits medidos corretamente pelo receptor. Controle do laço.
   received_counter = 0
+  # Os qubits que devem ser considerados
+  correct_qubit_ID = ''
+  
   while received_counter < key_size:
     base = randint(0, 1)
+    
+    # Recebendo as informações do qubits que devem ser considerados
+    data = receiver.get_next_classical(sender.host_id, wait=5)
+    regex = fr'.*\[{execution}\]$'
+    if data != None:
+      if re.fullmatch(regex, data.content):
+        correct_qubit_ID = data.content[:36]
+    else: continue
+    
     # 0 significa base retilínea e 1 significa base diagonal
-    qubit = receiver.get_qubit(sender.host_id, wait=20)
+    qubit = receiver.get_qubit(sender.host_id, wait=5)
 
+    # Se o qubit tratado não é o correto, pule
+    if not qubit.id == correct_qubit_ID:
+      continue
+    
     if qubit is not None:
       if base == 1:
         qubit.H()
@@ -166,7 +185,7 @@ def choice(hosts, executions=10):
 
 
 # Protocolos modularizado com as funções criadas anteriormente
-def sender_protocol(sender, receiver):
+def sender_protocol(sender, receiver, execution):
   """"
   Protocolo QKD para o remetente.
   
@@ -176,18 +195,17 @@ def sender_protocol(sender, receiver):
   """
 
   key = []
-  for bit in range(50):
+  for bit in range(10):
     key.append(randint(0, 1))
   
-  print(f'''{sender.host_id} - {receiver.host_id}: Iniciando o Protocolo de Envio.
-Chave gerada: {key}''')
+  print(f'[{execution}]{sender.host_id}-{receiver.host_id}: Iniciando o Protocolo de Envio. Chave gerada: {key}')
 
   key_size = len(key)
   sender.send_classical(receiver.host_id, str(key_size))
-  sender_QKD(sender, receiver, key)
+  sender_QKD(sender, receiver, execution, key)
   
   
-def receiver_protocol(receiver, sender):
+def receiver_protocol(receiver, sender, execution):
   """"
   Protocolo QKD para o receptor.
   
@@ -196,15 +214,15 @@ def receiver_protocol(receiver, sender):
     sender (Host): Host que deseja enviar a chave com QKD
   """
 
-  print(f"{sender.host_id} - {receiver.host_id}: Iniciando o Protocolo de Recebimento.")
+  print(f'[{execution}]{sender.host_id}-{receiver.host_id}: Iniciando o Protocolo de Recebimento.')
   msg = receiver.get_next_classical(sender.host_id).content
   while msg.isdigit() == False:
     msg = receiver.get_next_classical(sender.host_id).content
   key_size = int(msg)
-  key = receiver_QKD(receiver, sender, key_size)
+  key = receiver_QKD(receiver, sender, execution, key_size)
   
   if len(key) == key_size:
-    print(f'''{sender.host_id} - {receiver.host_id}: Chave recebida: {key}''')
+    print(f'[{execution}]{sender.host_id}-{receiver.host_id}: Chave recebida: {key}')
 
 
 # Função para execução de várias comunicações simultâneas dos protocolos
@@ -217,11 +235,12 @@ def running_concurrently(senders, receivers):
     receivers (lista): Lista com os Hosts que serão os receptores do protocolo QKD.
     time (float): Tempo estimado para a execução de todos os protocolos.
   """
-
+  
+  execution = 0
   # Rodando os protocolos com os remetentes e receptores escolhidos
   for send, recv in zip(senders, receivers):
-    send.run_protocol(sender_protocol, (recv,))
-    recv.run_protocol(receiver_protocol, (send,))
-
+    send.run_protocol(sender_protocol, (recv, execution))
+    recv.run_protocol(receiver_protocol, (send, execution))
+    execution += 1
   # Define o tempo que será dado ao simulador para execução dos protocolos
   

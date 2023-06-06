@@ -5,8 +5,9 @@ from qunetsim.objects import Logger, Qubit
 # Funções do QKD
 from b92 import sniffing_QKD, choice, running_concurrently
 from time import sleep
+
 def main():
-  Logger.DISABLED = False
+  Logger.DISABLED = True
   # Inicializando a rede e estabelecendo as conexões.
   network = Network.get_instance()
   network.delay = 0
@@ -74,13 +75,17 @@ def main():
   # Finalmente, executando os protocolos simultaneamente.
   running_concurrently(senders, receivers)
   
-  sleep(360)
+  # Tempo fornecido para a execução de todos os protocolos
+  sleep(120)
+  
   # Para a rede no final do exemplo
   network.stop(True)
   exit()
 
 if __name__ == '__main__':
-  import sys
+  main()
+
+"""  import sys
   import os
 
   # Armazena a referência para o stdout original
@@ -94,4 +99,4 @@ if __name__ == '__main__':
       # Redireciona a saída padrão para o arquivo
       sys.stdout = arquivo
       main()
-      sys.stdout = stdout_original
+      sys.stdout = stdout_original"""
