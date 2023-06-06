@@ -5,7 +5,7 @@ from random import randint
 from time import sleep
 import re
 
-Logger.DISABLED = False
+Logger.DISABLED = True
 
 def sender_QKD(sender, receiver, execution, key):
   """
@@ -33,14 +33,16 @@ def sender_QKD(sender, receiver, execution, key):
       
       # c8d2bd32-db4a-40d8-9ee0-3294cd321724[execution]
       data = f'{qubit.id}[{execution}]'
+      
+      print(f'enviando {data}')
       sender.send_classical(receiver.host_id, data, await_ack=True)
 
       # Enviando o qubit para o receptor.
       sender.send_qubit(receiver.host_id, qubit, await_ack=True)
 
       # Aguardando a mensagem sobre a escolha da base.
-      message = sender.get_next_classical(receiver.host_id, wait=20)
-
+      message = sender.get_next_classical(receiver.host_id, wait=3)
+      
       if message is not None:
         if message.content == f'sucess[{execution}]':
           success = True
@@ -69,9 +71,9 @@ def receiver_QKD(receiver, sender, execution, key_size):
   while received_counter < key_size:
 
     # Recebendo informações sobre o qubit que deve ser considerado
-    qubit_info = receiver.get_next_classical(sender.host_id)      
-    regex = fr'.*/[{execution}/]$'
-
+    qubit_info = receiver.get_next_classical(sender.host_id)    
+    regex = fr'.*\[{execution}\]$'
+    
     # Se a mensagem recebida condiz com esta execução
     if re.fullmatch(regex, qubit_info.content):
       # Add qubit ID no buffer
@@ -79,8 +81,9 @@ def receiver_QKD(receiver, sender, execution, key_size):
 
     # 0 significa base retilínea e 1 significa base diagonal
     base = randint(0, 1)
-    qubit = receiver.get_qubit(sender.host_id, wait=10)
-
+    qubit = receiver.get_qubit(sender.host_id, wait=3)
+    
+    print(key_receiver)
     if qubit is not None:
       if qubit.id in buffer:
         if base == 1:
@@ -115,7 +118,7 @@ def sender_protocol(sender, receiver, execution):
   """
 
   key = []
-  for bit in range(10):
+  for bit in range(5):
     key.append(randint(0, 1))
   
   print(f'''{sender.host_id} - {receiver.host_id}: Iniciando o Protocolo de Envio.
@@ -180,7 +183,7 @@ def main():
   host_n1.run_protocol(sender_protocol, (host_n3, 0))
   host_n3.run_protocol(receiver_protocol,  (host_n1, 0))
 
-  sleep(50)
+  sleep(120)
 
   # Para a rede no final do exemplo
   network.stop(True)
