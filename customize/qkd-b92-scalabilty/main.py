@@ -53,7 +53,7 @@ def main():
   network.add_hosts(hosts)
   
   # Plotando o grafo da rede
-  network.draw_classical_network()
+  #network.draw_classical_network()
   
   # Definindo se a rede deve ou não ser espionada
   # interception = input("Deseja que a rede possa ser espionada? (S/N): ")
@@ -79,11 +79,12 @@ def main():
         hosts[sniffer-1].q_relay_sniffing_fn = sniffing_QKD
     
   # Finalmente, executando os protocolos simultaneamente.
-  running_concurrently(senders, receivers)
-  
+  infos, generated_keys, received_keys = running_concurrently(senders, receivers)  
+  # Visualizar quais os hosts escolhidos
+
   # Tempo fornecido para a execução de todos os protocolos
-  sleep(100)
-  
+  sleep(10)
+  print(received_keys)
   # Para a rede no final do exemplo
   network.stop(True)
   exit()

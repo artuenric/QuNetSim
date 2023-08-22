@@ -185,37 +185,39 @@ def choice(hosts, executions=10):
 
 
 # Protocolos modularizado com as funções criadas anteriormente
-def sender_protocol(sender, receiver, execution):
+def sender_protocol(sender, receiver, execution, generated_keys):
   """"
   Protocolo QKD para o remetente.
   
   Args:
     sender (Host): Host que deseja enviar a chave com QKD
     receiver (Host): Host que deseja receber a chave com QKD
+    generated_keys (lista): Lista de todas as chaves geradas
   """
 
   # Gera a chave com tamanho igual a 256
   key = []
-  for bit in range(256):
+  for bit in range(10):
     key.append(randint(0, 1))
   
-  print(f'[{execution}]{sender.host_id}-{receiver.host_id}: Iniciando o Protocolo de Envio. Chave gerada: {key}')
-
+  print(f'[{execution}] Chave gerada:{key}')
+  generated_keys.append(key)
+  
   key_size = len(key)
   sender.send_classical(receiver.host_id, str(key_size))
   sender_QKD(sender, receiver, execution, key)
   
   
-def receiver_protocol(receiver, sender, execution):
+def receiver_protocol(receiver, sender, execution, received_keys):
   """"
   Protocolo QKD para o receptor.
   
   Args:
     receiver (Host): Host que deseja receber a chave com QKD
     sender (Host): Host que deseja enviar a chave com QKD
+    received_keys (lista): Lista de todas as chaves recebidas
   """
 
-  print(f'[{execution}]{sender.host_id}-{receiver.host_id}: Iniciando o Protocolo de Recebimento.')
   msg = receiver.get_next_classical(sender.host_id).content
   while msg.isdigit() == False:
     msg = receiver.get_next_classical(sender.host_id).content
@@ -223,7 +225,8 @@ def receiver_protocol(receiver, sender, execution):
   key = receiver_QKD(receiver, sender, execution, key_size)
   
   if len(key) == key_size:
-    print(f'[{execution}]{sender.host_id}-{receiver.host_id}: Chave recebida: {key}')
+    print(f'[{execution}] Chave recebida:{key}')
+    received_keys.append(key)
 
 
 # Função para execução de várias comunicações simultâneas dos protocolos
@@ -238,10 +241,15 @@ def running_concurrently(senders, receivers):
   """
   
   execution = 0
+  executions_info = []
+  received_keys = []
+  generated_keys = []
+  
   # Rodando os protocolos com os remetentes e receptores escolhidos
   for send, recv in zip(senders, receivers):
-    send.run_protocol(sender_protocol, (recv, execution))
-    recv.run_protocol(receiver_protocol, (send, execution))
+    executions_info.append(f'[{execution}]:{send.host_id}-{recv.host_id}')
+    send.run_protocol(sender_protocol, (recv, execution, generated_keys))
+    recv.run_protocol(receiver_protocol, (send, execution, received_keys))
     execution += 1
-  # Define o tempo que será dado ao simulador para execução dos protocolos
   
+  return executions_info, generated_keys, received_keys

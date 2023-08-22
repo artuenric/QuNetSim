@@ -1,0 +1,8 @@
+[0] Chave gerada:[1, 1, 1, 0, 0, 0, 1, 1, 0, 1]
+[1] Chave gerada:[0, 1, 1, 0, 1, 0, 1, 1, 1, 0]
+[2] Chave gerada:[1, 1, 0, 1, 0, 0, 1, 1, 1, 1]
+[3] Chave gerada:[1, 0, 1, 1, 1, 0, 0, 0, 0, 1]
+[0] Chave recebida:[1, 1, 1, 0, 0, 0, 1, 1, 0, 1]
+[1] Chave recebida:[0, 1, 1, 0, 1, 0, 1, 1, 1, 0]
+[2] Chave recebida:[1, 1, 0, 1, 0, 0, 1, 1, 1, 1]
+[3] Chave recebida:[1, 0, 1, 1, 1, 0, 0, 0, 0, 1]
