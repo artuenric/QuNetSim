@@ -194,8 +194,9 @@ def sender_protocol(sender, receiver, execution):
     receiver (Host): Host que deseja receber a chave com QKD
   """
 
+  # Gera a chave com tamanho igual a 256
   key = []
-  for bit in range(10):
+  for bit in range(256):
     key.append(randint(0, 1))
   
   print(f'[{execution}]{sender.host_id}-{receiver.host_id}: Iniciando o Protocolo de Envio. Chave gerada: {key}')
