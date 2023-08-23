@@ -35,7 +35,7 @@ def sender_QKD(sender, receiver, execution, key):
       
       # Enviando o qubit para o receptor.
       sender.send_qubit(receiver.host_id, qubit, await_ack=True)
-
+      
       # Aguardando a mensagem sobre a escolha da base.
       message = sender.get_next_classical(receiver.host_id, wait=5)
 
@@ -101,6 +101,7 @@ def receiver_QKD(receiver, sender, execution, key_size):
       receiver.send_classical(sender.host_id, message_to_send, await_ack=True)
     else:
       receiver.send_classical(sender.host_id, "None", await_ack=True)
+    print(f'{execution} - {key_receiver}')
   return key_receiver
 
 
@@ -144,7 +145,7 @@ def choice(hosts, executions=10):
   executions = int(executions)
               
   # Lista com os remetentes, receptores, e seus sniffers
-  senders =[]
+  senders = []
   receivers = []
   sniffers = {}
   
@@ -153,14 +154,20 @@ def choice(hosts, executions=10):
     sender = hosts[randint(0, len(hosts)-1)]
     receiver = hosts[randint(0, len(hosts)-1)]
     
-    while sender.host_id == receiver.host_id:
-      receiver = hosts[randint(0, len(hosts)-1)]
+    # Guardar informações dos hosts escolhidos
+    sender_num = int(sender.host_id[4:])
+    receiver_num = int(receiver.host_id[4:])
     
+    # Receiver e Sender não devem ser o mesmo Host (não há como realizar o protocolo) ou Hosts adjacentes (não é possível um sniffer)
+    while (sender_num == receiver_num) or (sender_num == receiver_num + 1) or (sender_num == receiver_num - 1):
+      receiver = hosts[randint(0, len(hosts)-1)]
+      receiver_num = int(receiver.host_id[4:])
+
     # Adicionando os nós escolhidos nas suas respectvas listas
     senders.append(sender)
     receivers.append(receiver)
   
-  # Escolhendo os sniffers, caso seja possível.
+  # Escolhendo os sniffers.
   for send, recv in zip(senders, receivers):
     # Obtém o número do host ID. Por exemplo, o 1 do Node1.
     sender_n = int(send.host_id[4:])
@@ -168,18 +175,12 @@ def choice(hosts, executions=10):
     
     # Se a comunicação seja da esquerda para direita. Por exemplo, sender é o Node1 e receiver é o Node4
     if sender_n < receiver_n:  
-      if sender_n + 1 != receiver_n:
-        sniffers[f'{sender_n}-{receiver_n}'] = randint(sender_n + 1, receiver_n - 1)
-      else:
-        # Se não há intermediário entre os hosts:
-        sniffers[f'{sender_n}-{receiver_n}'] = 'None'
-  
+      sniffers[f'{sender_n}-{receiver_n}'] = randint(sender_n + 1, receiver_n - 1)
+
     # Se a comunicação é da direita para a esquerda:
     else:
       if sender_n - 1 != receiver_n:
         sniffers[f'{sender_n}-{receiver_n}'] = randint(receiver_n + 1, sender_n - 1)
-      else:
-        sniffers[f'{sender_n}-{receiver_n}'] = 'None'
 
   return senders, receivers, sniffers
 
@@ -201,7 +202,7 @@ def sender_protocol(sender, receiver, execution, generated_keys):
     key.append(randint(0, 1))
   
   print(f'[{execution}] Chave gerada:{key}')
-  generated_keys.append(key)
+  generated_keys[f'{execution}'] = key
   
   key_size = len(key)
   sender.send_classical(receiver.host_id, str(key_size))
@@ -226,7 +227,7 @@ def receiver_protocol(receiver, sender, execution, received_keys):
   
   if len(key) == key_size:
     print(f'[{execution}] Chave recebida:{key}')
-    received_keys.append(key)
+    received_keys[f'{execution}'] = key
 
 
 # Função para execução de várias comunicações simultâneas dos protocolos
@@ -242,14 +243,14 @@ def running_concurrently(senders, receivers):
   
   execution = 0
   executions_info = []
-  received_keys = []
-  generated_keys = []
+  received_keys = dict()
+  generated_keys = dict()
   
   # Rodando os protocolos com os remetentes e receptores escolhidos
   for send, recv in zip(senders, receivers):
     executions_info.append(f'[{execution}]:{send.host_id}-{recv.host_id}')
     send.run_protocol(sender_protocol, (recv, execution, generated_keys))
-    recv.run_protocol(receiver_protocol, (send, execution, received_keys))
+    recv.run_protocol(receiver_protocol, (send, execution, received_keys) )
     execution += 1
   
   return executions_info, generated_keys, received_keys

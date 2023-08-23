@@ -9,7 +9,13 @@ from qunetsim.objects import Logger, Qubit
 
 # Funções do QKD
 from b92 import sniffing_QKD, choice, running_concurrently
+
+# Funções para colher os dados e plotar o gráfico.
+from plot import organize
+
+# Demais dependências
 from time import sleep
+
 
 def main():
   Logger.DISABLED = True
@@ -53,17 +59,16 @@ def main():
   network.add_hosts(hosts)
   
   # Plotando o grafo da rede
-  #network.draw_classical_network()
+  # network.draw_classical_network()
   
   # Definindo se a rede deve ou não ser espionada
   # interception = input("Deseja que a rede possa ser espionada? (S/N): ")
-  interception = 'N'
+  interception = 'S'
   while not interception.upper() in ['S', 'N']:
     interception = input("Insira 'S' ou 'N': ")
   interception = interception.upper()
 
   # Definindo o número de execuções do protocolo
-  #execs = input("Quantas execuções simultâneas a rede deve ter? ")
   execs = '4'
 
   # Escolhendo aleatoriamente quem participa das comunicações
@@ -78,12 +83,18 @@ def main():
         # A função a ser aplicada aos qubits em trânsito.
         hosts[sniffer-1].q_relay_sniffing_fn = sniffing_QKD
     
-  # Finalmente, executando os protocolos simultaneamente.
+  # Executando os protocolos simultaneamente e colhendo os dados
   infos, generated_keys, received_keys = running_concurrently(senders, receivers)  
+  print(infos)
+  
   # Visualizar quais os hosts escolhidos
-
+  organize(generated_keys)
+  print(generated_keys)
+  
   # Tempo fornecido para a execução de todos os protocolos
-  sleep(10)
+  sleep(60)
+  
+  organize(received_keys)
   print(received_keys)
   # Para a rede no final do exemplo
   network.stop(True)
